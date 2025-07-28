@@ -16,10 +16,10 @@ const multer = require("multer");
 
 const adminRoutes = require('./admin');
 const vehicleRoutes = require('./vehicle'); // Assuming you have a vehicle.js file for vehicle routes
-const customerRoutes = require('./customer'); // Assuming you have a customer.js file for customer routes
+const customerRoutes = require('./Customer'); // Assuming you have a customer.js file for customer routes
 const mechanicRoutes = require('./mechanic'); // Assuming you have a mechanic.js file for mechanic routes
-// const serviceRoutes = require('./service'); // Assuming you have a service.js file for service routes
-// const reviewRoutes = require('./review'); // Assuming you have a review.js file for review routes
+const serviceRoutes = require('./service'); // Assuming you have a service.js file for service routes
+const reviewRoutes = require('./review'); // Assuming you have a review.js file for review routes
 const profileRoutes = require('./profile'); // Assuming you have a profile.js file for profile routes
 const searchRoutes = require('./Search'); // Assuming you have a Search.js file for search routes
 const ServiceCategoriesRoutes = require('./ServiceCategories'); // Assuming you have a ServiceCategories.js file for service categories routes
@@ -27,9 +27,19 @@ const historyRoutes = require('./history'); // Assuming you have a history.js fi
 const chngePasswordRoutes = require('./ChangePassword'); // Assuming you have a changePassword.js file for change password routes
 const BookingRoutes = require('./booking'); // Assuming you have a Booking.js file for booking routes
 const resetPasswordRoutes = require('./resetpsword'); // Assuming you have a resetpsword.js file for reset password routes
-
+const chatbotData = require('./questionsAnswers');
+const chatbotRoutes = require('./chatbot'); // Assuming you have a chatbot.js file for chatbot routes
+const certificationRoutes = require('./certification'); // Assuming you have a certification.js file for certification routes
+const paymentRoutes = require('./payment'); // Assuming you have a payment.js file for payment routes
+const cartRoutes = require('./cart'); // Assuming you have a cart.js file for cart routes
+const specializationsRoutes = require('./Specialization'); // Assuming you have a Specialization.js file for specializations routes
+const notificationRoutes = require('./notification'); // Assuming you have a notification.js file for notification routes 
+const offerRoutes = require('./offer'); // Assuming you have a offer.js file for offer routes
+const favouriteRoutes = require('./favourite'); // Assuming you have a favourite.js file for favourite routes
+const walletRoutes = require('./Wallet'); // Assuming you have a Wallet.js file for wallet routes 
+const emergencyRoutes = require('./emergency'); // Assuming you have a emergency.js file for emergency routes                      
 // Middleware
-app.use(express.json()); 
+app.use(express.json({ limit: "5mb" }));
 app.use(cors());
 app.use(bodyParser.json());
 app.use('/admin', adminRoutes);
@@ -38,11 +48,23 @@ app.use('/mechanic', mechanicRoutes);
 app.use('/profile', profileRoutes); // Uncomment if you have vehicle routes
 app.use('/vehicle', vehicleRoutes); // Uncomment if you have vehicle routes
 app.use('/search', searchRoutes); // Uncomment if you have search routes
-app.use('/ServiceCategories', require('./ServiceCategories')); // Assuming you have a ServiceCategories.js file for service categories routes
+app.use('/ServiceCategories', ServiceCategoriesRoutes); // Assuming you have a ServiceCategories.js file for service categories routes
 app.use('/changePassword', chngePasswordRoutes); // Assuming you have a changePassword.js file for change password routes
 app.use('/history', historyRoutes); // Assuming you have a history.js file for history routes
 app.use('/booking', BookingRoutes); // Assuming you have a booking.js file for booking routes
 app.use('/resetpsword', resetPasswordRoutes); // Assuming you have a resetpsword.js file for reset password routes
+app.use('/service', serviceRoutes); // Assuming you have a service.js file for service routes
+app.use('/chatbot', chatbotRoutes); // Assuming you have a chatbot.js file for chatbot routes
+app.use('/certification', certificationRoutes); // Assuming you have a certification.js file for certification routes
+app.use('/payment', paymentRoutes); // Assuming you have a payment.js file for payment routes
+app.use('/cart', cartRoutes); // Assuming you have a cart.js file for cart routes
+app.use('/specializations', specializationsRoutes); // Assuming you have a Specialization.js file for specializations routes
+ app.use('/notification', notificationRoutes); // Assuming you have a notification.js file for notification routes
+app.use('/offer', offerRoutes); // Assuming you have a offer.js file for offer routes
+app.use('/review', reviewRoutes); // Assuming you have a review.js file for review routes
+app.use('/favourite', favouriteRoutes); // Assuming you have a favourite.js file for favourite routes
+app.use('/wallet', walletRoutes); // Assuming you have a Wallet.js file for wallet routes
+app.use('/emergency', emergencyRoutes); // Assuming you have a emergency.js file for emergency routes
 
 // PostgreSQL Pool
 const pool = new Pool({
@@ -294,8 +316,8 @@ const fetchAndStoreCars = async () => {
   }
 };
 
-// Run the script
-fetchAndStoreCars();
+// // Run the script
+// fetchAndStoreCars();
 
 // API to get all car makes
 app.get('/api/makes', async (req, res) => {
@@ -386,10 +408,6 @@ app.get('/api/fuel-types', async (req, res) => {
         res.status(500).json({ error: 'An error occurred while fetching fuel types' });
     }
 });
-// const normalizeString = (str) => {
-//     return str.trim().toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase());
-//   };
-// //
 
   
 
@@ -427,20 +445,19 @@ const authenticateJWT = (req, res, next) => {
     }
   });
 
-
 app.post('/api/vehicles', authenticateJWT, async (req, res) => {
-  const { make, model, year, transmission, fuel_type, isDefault } = req.body;
-  const user_id = req.user?.user_id; // Ensure user ID is extracted from JWT
-  console.log('Request body:', req.body); // Log the request body
-  console.log('User ID from token:', user_id); // Log the user I
-   // Log the Authorization header to see the token sent with the request
+  const { make, model, year, transmission, fuel_type, isDefault, quantity } = req.body;
+  const user_id = req.user?.user_id;
   const authHeader = req.headers.authorization;
+
+  console.log('Request body:', req.body);
+  console.log('User ID from token:', user_id);
   console.log('Authorization header:', authHeader);
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Unauthorized: Missing or invalid token.' });
   }
-  // Input Validation
+
   if (!make || !model || !year || !transmission || !fuel_type) {
     return res.status(400).json({ error: 'Missing required fields: make, model, year, transmission, or fuel_type.' });
   }
@@ -448,6 +465,8 @@ app.post('/api/vehicles', authenticateJWT, async (req, res) => {
   if (!user_id) {
     return res.status(401).json({ error: 'Unauthorized: Missing or invalid token.' });
   }
+
+  const qty = parseInt(quantity) || 1; // Default to 1 if quantity is undefined
 
   try {
     // Check if ReferenceVehicle entry exists
@@ -462,7 +481,6 @@ app.post('/api/vehicles', authenticateJWT, async (req, res) => {
     if (referenceVehicleQuery.rows.length > 0) {
       reference_id = referenceVehicleQuery.rows[0].reference_id;
     } else {
-      // Create a new ReferenceVehicle entry
       const newRefQuery = await pool.query(`
         INSERT INTO referencevehicle (make, model, year, transmission, fuel_type)
         VALUES ($1, $2, $3, $4, $5)
@@ -471,7 +489,7 @@ app.post('/api/vehicles', authenticateJWT, async (req, res) => {
       reference_id = newRefQuery.rows[0].reference_id;
     }
 
-    // Handle isDefault logic
+    // If setting this as default, unset others
     if (isDefault) {
       await pool.query(`
         UPDATE vehicle
@@ -480,14 +498,18 @@ app.post('/api/vehicles', authenticateJWT, async (req, res) => {
       `, [user_id]);
     }
 
-    // Insert into Vehicle table
-    const newVehicleQuery = await pool.query(`
-      INSERT INTO vehicle (user_id, reference_id, isDefault, registration_date)
-      VALUES ($1, $2, $3, CURRENT_DATE)
-      RETURNING *
-    `, [user_id, reference_id, isDefault || false]);
+   const newVehicleQuery = await pool.query(`
+  INSERT INTO vehicle (user_id, reference_id, isDefault, registration_date, quantity)
+  VALUES ($1, $2, $3, CURRENT_DATE, $4)
+  RETURNING *
+`, [user_id, reference_id, isDefault, qty]);  // هنا qty مباشرة كـ quantity
 
-    res.status(201).json(newVehicleQuery.rows[0]);
+const insertedVehicle = newVehicleQuery.rows[0];
+
+res.status(201).json({ message: `${qty} vehicle(s) added successfully.`, vehicle: insertedVehicle });
+
+
+
   } catch (error) {
     console.error('Error adding vehicle:', error);
 
@@ -499,77 +521,89 @@ app.post('/api/vehicles', authenticateJWT, async (req, res) => {
   }
 });
 
+
+
+// app.get('/myprofile', authenticateJWT, async (req, res) => {
+//   const user_id = req.user.user_id;
+
+//   try {
+//     // 1. جلب بيانات المستخدم الأساسية
+//     const userResult = await pool.query(
+//       `SELECT first_name, last_name, email_address, profile_picture, role, phone_number
+//        FROM Users WHERE user_id = $1`,
+//       [user_id]
+//     );
+
+//     if (userResult.rows.length === 0) {
+//       return res.status(404).json({ message: 'User not found' });
+//     }
+
+//     const user = userResult.rows[0];
+
+//     // 2. جلب العنوان - لأي يوزر
+//     const addressResult = await pool.query(
+//       `SELECT street, city, latitude, longitude
+//        FROM Address WHERE user_id = $1`,
+//       [user_id]
+//     );
+
+//     const address = addressResult.rows[0] || null;
+
+//     // 3. لو كان Customer، نجيب التفاصيل الخاصة فيه
+//     let customerDetails = null;
+//     if (user.role === 'Customer') {
+//       const customerResult = await pool.query(
+//         `SELECT loyalty_points, cancel_count, is_company
+//          FROM Customers WHERE user_id = $1`,
+//         [user_id]
+//       );
+//       customerDetails = customerResult.rows[0] || null;
+//     }
+
+//     // 4. لو كان Mechanic، نجيب تفاصيل الورشة
+//     let workshopDetails = null;
+//     if (user.role === 'Mechanic') {
+//       const workshopResult = await pool.query(
+//         `SELECT workshop_name, approval_status, working_day_hours
+//          FROM Workshops WHERE user_id = $1`,
+//         [user_id]
+//       );
+
+//       workshopDetails = workshopResult.rows[0] || {
+//         message: 'Mechanic is not assigned to any workshop'
+//       };
+//     }
+
+//     // ✅ إرسال الرد
+//     res.status(200).json({
+//       user,
+//       address,           // 🏠 العنوان لأي يوزر
+//       customerDetails,   // 👤 فقط لو كان زبون
+//       workshopDetails    // 🛠 فقط لو كان ميكانيكي
+//     });
+//   } catch (error) {
+//     console.error('Error fetching profile:', error.message);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
+
+
+const profileCache = require('./cache');
+
 app.get('/myprofile', authenticateJWT, async (req, res) => {
-  const user_id = req.user.user_id;  // Decode user_id from the token
+  const user_id = req.user.user_id;
 
-  try {
-      // Fetch user profile details
-      const userResult = await pool.query(
-          'SELECT first_name, last_name, email_address, profile_picture, role, phone_number FROM Users WHERE user_id = $1',
-          [user_id]
-      );
-
-      if (userResult.rows.length === 0) {
-          return res.status(404).json({ message: 'User not found' });
-      }
-
-      const user = userResult.rows[0];
-
-      // Fetch address associated with the user
-      const addressResult = await pool.query(
-          'SELECT street, city FROM address WHERE user_id = $1',
-          [user_id]
-      );
-
-      const address = addressResult.rows[0]; // Address data for the user
-
-      // Fetch associated customer details (if the user is a customer)
-      let customerDetails = null;
-      if (user.role === 'Customer') {
-          const customerResult = await pool.query(
-              'SELECT loyalty_points, cancel_count FROM Customers WHERE user_id = $1',
-              [user_id]
-          );
-          customerDetails = customerResult.rows[0];
-      }
-
-      let workshopDetails = null;
-
-      if (user.role === 'Mechanic') {
-          const workshopResult = await pool.query(
-              'SELECT workshop_name, approval_status, working_day_hours FROM Workshops WHERE user_id = $1',
-              [user_id]
-          );
-      
-          if (workshopResult.rows.length > 0) {
-              workshopDetails = workshopResult.rows[0]; // Include working_day_hours here
-          } else {
-              workshopDetails = { message: "Mechanic is not assigned to any workshop" };
-          }
-      }
-      
-      // Response
-      res.status(200).json({
-          user,
-          address, // Include address in the response
-          customerDetails,
-          workshopDetails,
-      });
-  } catch (error) {
-      console.error('Error fetching profile:', error.message);
-      res.status(500).json({ message: 'Server error' });
+  // ✅ أولًا نحاول نرجع من الكاش
+  const cached = profileCache.get(user_id);
+  if (cached) {
+    console.log("⚡ from the chache ");
+    return res.json(cached);
   }
-});
-
-
-
-app.get('/myhome', authenticateJWT, async (req, res) => {
-  const user_id = req.user.user_id; // Decoded from JWT
 
   try {
-    // Fetch only the required user details
     const userResult = await pool.query(
-      'SELECT first_name, last_name, profile_picture FROM Users WHERE user_id = $1',
+      `SELECT first_name, last_name, email_address, profile_picture, role, phone_number
+       FROM Users WHERE user_id = $1`,
       [user_id]
     );
 
@@ -579,20 +613,76 @@ app.get('/myhome', authenticateJWT, async (req, res) => {
 
     const user = userResult.rows[0];
 
-    // ✅ Return only first_name, last_name, and profile_picture
-    res.status(200).json({
-      first_name: user.first_name,
-      last_name: user.last_name,
-      profile_picture: user.profile_picture
-    });
+    const addressResult = await pool.query(
+      `SELECT street, city, latitude, longitude
+       FROM Address WHERE user_id = $1`,
+      [user_id]
+    );
+    const address = addressResult.rows[0] || null;
+
+    let customerDetails = null;
+    if (user.role === 'Customer') {
+      const customerResult = await pool.query(
+        `SELECT loyalty_points, cancel_count, is_company
+         FROM Customers WHERE user_id = $1`,
+        [user_id]
+      );
+      customerDetails = customerResult.rows[0] || null;
+    }
+
+    let workshopDetails = null;
+    if (user.role === 'Mechanic') {
+      const workshopResult = await pool.query(
+        `SELECT workshop_name, approval_status, working_day_hours
+         FROM Workshops WHERE user_id = $1`,
+        [user_id]
+      );
+      workshopDetails = workshopResult.rows[0] || {
+        message: 'Mechanic is not assigned to any workshop'
+      };
+    }
+
+    const fullProfile = {
+      user,
+      address,
+      customerDetails,
+      workshopDetails
+    };
+
+    // 🧠 خزّنه بالكاش
+    profileCache.set(user_id, fullProfile);
+
+    res.status(200).json(fullProfile);
   } catch (error) {
     console.error('Error fetching profile:', error.message);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
+app.put('/convertToCompany', authenticateJWT, async (req, res) => {
+  const user_id = req.user.user_id;
+
+  try {
+    // تأكد أولاً إنو الزبون فعلاً Customer
+    const roleResult = await pool.query('SELECT role FROM Users WHERE user_id = $1', [user_id]);
+    const role = roleResult.rows[0]?.role;
+
+    if (role !== 'Customer') {
+      return res.status(403).json({ message: 'Only customers can convert to company' });
+    }
+
+    // حدث is_company
+    await pool.query('UPDATE Customers SET is_company = TRUE WHERE user_id = $1', [user_id]);
+
+    res.status(200).json({ message: 'Account converted to company successfully' });
+  } catch (error) {
+    console.error('Error converting to company:', error.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Start the server and listen on a specified port
-const port = process.env.PORT || 5000; // Use environment variable or default to 5000
+const port = process.env.PORT || 80; // Use environment variable or default to 5000
 app.listen(port, '0.0.0.0', () => {
     console.log(`Server is running on port ${port}`);
 });
